@@ -207,6 +207,18 @@ class RunScript(unittest.TestCase):
         self.assertIn("NTFY_UPSTREAM_BASE_URL=https://ntfy.sh", log)
         self.assertIn("NTFY_BASE_URL=http://192.168.1.2:8093", log)
 
+    def test_attachments_only_with_base_url(self):
+        log, _ = self.run_app(self.BASE)
+        self.assertNotIn("ATTACHMENT", log)  # ntfy would refuse to start
+        log, _ = self.run_app(dict(self.BASE, base_url="http://10.0.0.2:8093"))
+        self.assertRegex(log, r"NTFY_ATTACHMENT_CACHE_DIR=.*/attachments")
+
+    def test_bad_base_url(self):
+        for bad in ("10.0.0.2:8093", "http://10.0.0.2:8093/"):
+            log, r = self.run_app(dict(self.BASE, base_url=bad), expect_rc=1)
+            self.assertIn("base_url", r.stderr)
+            self.assertEqual(log, "")
+
     def test_ios_requires_base_url(self):
         log, r = self.run_app(dict(self.BASE, ios_push_forwarding=True), expect_rc=1)
         self.assertIn("base_url", r.stderr)

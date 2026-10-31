@@ -56,6 +56,10 @@ jobs:
         if: steps.upd.outputs.updated == 'true'
         run: python3 scripts/appctl.py validate --base-changelog "$RUNNER_TEMP/CHANGELOG.base"
 
+      - name: Build and smoke-test the updated image (amd64)
+        if: steps.upd.outputs.updated == 'true'
+        run: scripts/smoke.sh amd64
+
       - name: Commit, open PR, merge
         if: steps.upd.outputs.updated == 'true'
         env:

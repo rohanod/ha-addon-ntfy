@@ -10,7 +10,7 @@ arch:
   - aarch64
   - armv7
 init: false
-startup: application
+startup: services
 boot: auto
 backup: cold
 webui: "http://[HOST]:[PORT:80]"

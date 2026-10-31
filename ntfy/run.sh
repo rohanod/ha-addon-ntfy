@@ -12,6 +12,16 @@ opt() { jq -r --arg k "$1" 'if .[$k] == null then empty else .[$k] | tostring en
 BASE_URL="$(opt base_url)"
 IOS="$(opt ios_push_forwarding)"
 
+if [ -n "$BASE_URL" ]; then
+  case "$BASE_URL" in
+    http://*|https://*) ;;
+    *) echo "ERROR: base_url must start with http:// or https://" >&2; exit 1 ;;
+  esac
+  case "$BASE_URL" in
+    */) echo "ERROR: base_url must not end with a slash" >&2; exit 1 ;;
+  esac
+fi
+
 if [ "$IOS" = "true" ] && [ -z "$BASE_URL" ]; then
   echo "ERROR: ios_push_forwarding requires base_url (the URL your iPhone uses, e.g. http://192.168.1.10:8093)" >&2
   exit 1
@@ -25,7 +35,12 @@ export NTFY_ENABLE_LOGIN="$(opt enable_login)"
 export NTFY_ENABLE_SIGNUP="$(opt enable_signup)"
 export NTFY_CACHE_DURATION="$(opt cache_duration)"
 export NTFY_LOG_LEVEL="$(opt log_level)"
-[ -n "$BASE_URL" ] && export NTFY_BASE_URL="$BASE_URL"
+if [ -n "$BASE_URL" ]; then
+  export NTFY_BASE_URL="$BASE_URL"
+  # ntfy refuses to start with an attachment dir but no base-url
+  mkdir -p "$DATA/attachments"
+  export NTFY_ATTACHMENT_CACHE_DIR="$DATA/attachments"
+fi
 if [ "$IOS" = "true" ]; then
   export NTFY_UPSTREAM_BASE_URL="https://ntfy.sh"
   TOKEN="$(opt upstream_access_token)"
