@@ -1,0 +1,43 @@
+name: ntfy
+version: "2.35.0"
+slug: ntfy
+description: Self-hosted ntfy push notification server (official upstream image)
+url: "https://github.com/rohanod/ha-addon-ntfy/tree/main/ntfy"
+stage: stable
+panel_icon: mdi:bell-ring
+arch:
+  - amd64
+  - aarch64
+  - armv7
+init: false
+startup: application
+boot: auto
+backup: cold
+webui: "http://[HOST]:[PORT:80]"
+watchdog: "http://[HOST]:[PORT:80]/v1/health"
+ports:
+  80/tcp: 8093
+ports_description:
+  80/tcp: ntfy HTTP server
+options:
+  base_url: ""
+  auth_default_access: deny-all
+  enable_login: true
+  enable_signup: false
+  cache_duration: 12h
+  log_level: info
+  ios_push_forwarding: false
+  users: []
+schema:
+  base_url: str?
+  auth_default_access: list(deny-all|read-only|write-only|read-write)
+  enable_login: bool
+  enable_signup: bool
+  cache_duration: match(^[0-9]+(s|m|h)$)
+  log_level: list(trace|debug|info|warn|error)
+  ios_push_forwarding: bool
+  upstream_access_token: password?
+  users:
+    - username: match(^[A-Za-z0-9_.-]+$)
+      password: password
+      role: list(admin|user)

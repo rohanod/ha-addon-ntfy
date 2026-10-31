@@ -1,0 +1,20 @@
+name: Test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s tests -v
+      - run: python3 scripts/appctl.py validate
+      - name: Build app image (amd64)
+        run: docker build --build-arg BUILD_VERSION=ci --build-arg BUILD_ARCH=amd64 -t ntfy-app ntfy
+      - name: Smoke test
+        run: |
+          mkdir d && echo '{"base_url":"","auth_default_access":"deny-all","enable_login":true,"enable_signup":false,"cache_duration":"12h","log_level":"info","ios_push_forwarding":false,"users":[{"username":"ha","password":"secret","role":"admin"}]}' > d/options.json
+          docker run -d --name n -p 8093:80 -v $PWD/d:/data ntfy-app
+          for i in $(seq 30); do curl -fs localhost:8093/v1/health && break; sleep 1; done
+          curl -s localhost:8093/v1/health | grep '"healthy":true'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -d hi localhost:8093/t)" = 403
+          curl -fs -u ha:secret -d hi localhost:8093/t
+          docker logs n

@@ -1,0 +1,81 @@
+name: Update ntfy
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+    inputs:
+      packaging_note:
+        description: "Packaging-only release: changelog note (leave empty to check upstream instead)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: ntfy-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+      NOTE: ${{ inputs.packaging_note }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Run tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Skip if an update PR is already open
+        id: open
+        run: |
+          n=$(gh pr list --state open --search "head:automation/ntfy-" --json number --jq length)
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+
+      - name: Update version, pin, and changelog
+        id: upd
+        if: steps.open.outputs.n == '0'
+        run: |
+          cp ntfy/CHANGELOG.md "$RUNNER_TEMP/CHANGELOG.base"
+          if [ -n "$NOTE" ]; then
+            python3 scripts/appctl.py update --packaging-note "$NOTE"
+          else
+            python3 scripts/appctl.py update
+          fi
+
+      - name: Validate (version, image pin, changelog, history preserved)
+        if: steps.upd.outputs.updated == 'true'
+        run: python3 scripts/appctl.py validate --base-changelog "$RUNNER_TEMP/CHANGELOG.base"
+
+      - name: Commit, open PR, merge
+        if: steps.upd.outputs.updated == 'true'
+        env:
+          NEW: ${{ steps.upd.outputs.new }}
+        run: |
+          set -euo pipefail
+          branch="automation/ntfy-${NEW}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add ntfy/config.yaml ntfy/Dockerfile ntfy/CHANGELOG.md
+          git commit -m "Update ntfy app to ${NEW}"
+          git push --set-upstream origin "$branch"
+          url=$(gh pr create --base "${{ github.event.repository.default_branch }}" --head "$branch" \
+            --title "Update ntfy app to ${NEW}" \
+            --body "Automated update. Changelog generated and validated in the same commit; see ntfy/CHANGELOG.md.")
+          gh pr merge "$url" --squash --delete-branch
+
+      - name: Report failure
+        if: failure()
+        run: |
+          gh issue create --title "ntfy update workflow failed" \
+            --body "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. No version was published."
