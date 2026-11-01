@@ -1,5 +1,5 @@
 name: ntfy
-version: "2.35.0"
+version: "2.36.0"
 slug: ntfy
 description: Self-hosted ntfy push notification server (official upstream image)
 url: "https://github.com/rohanod/ha-addon-ntfy/tree/main/ntfy"
