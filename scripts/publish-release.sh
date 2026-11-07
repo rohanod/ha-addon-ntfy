@@ -18,6 +18,14 @@ git show "${commit}:ntfy/Dockerfile" | grep -Eq "^FROM binwiederhier/ntfy:v${ups
 }
 
 remote_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" --jq '.object.sha' 2>/dev/null || true)"
+# Some gh versions return the HTTP 404 JSON body even with --jq.
+# Only a genuine Not Found response means a tag is absent.
+if [[ "$remote_sha" == *'"message":"Not Found"'* && "$remote_sha" == *'"status":"404"'* ]]; then
+  remote_sha=""
+elif [[ -n "$remote_sha" && ! "$remote_sha" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Unexpected response while looking up tag: $remote_sha" >&2
+  exit 1
+fi
 if [[ -n "$remote_sha" && "$remote_sha" != "$commit" ]]; then
   echo "Tag ${tag} already exists at ${remote_sha}, expected ${commit}; refusing to move it" >&2
   exit 1
