@@ -77,6 +77,11 @@ jobs:
             --title "Update ntfy app to ${NEW}" \
             --body "Automated update. Changelog generated and validated in the same commit; see ntfy/CHANGELOG.md.")
           gh pr merge "$url" --squash --delete-branch
+          # GitHub-token merges do not trigger other workflows; publish here too.
+          merge_sha="$(gh pr view "$url" --json mergeCommit --jq '.mergeCommit.oid')"
+          test -n "$merge_sha"
+          git fetch origin main
+          bash scripts/publish-release.sh "$merge_sha"
 
       - name: Report failure
         if: failure()

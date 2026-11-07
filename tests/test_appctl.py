@@ -31,7 +31,22 @@ class Base(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp())
         shutil.copytree(REPO / "ntfy", self.tmp / "ntfy", ignore=shutil.ignore_patterns("run.sh"))
         self.addCleanup(shutil.rmtree, self.tmp)
+        # Keep test fixtures independent of the version currently released.
+        cfg = self.tmp / "ntfy" / "config.yaml"
+        cfg.write_text(re.sub(r'^version: "[^"]+"$', 'version: "2.35.0"', cfg.read_text(), flags=re.M))
+        df = self.tmp / "ntfy" / "Dockerfile"
+        df.write_text(re.sub(r'^(FROM binwiederhier/ntfy:)v[0-9.]+@', r'\g<1>v2.35.0@', df.read_text(), flags=re.M))
         self.cl = self.tmp / "ntfy" / "CHANGELOG.md"
+        self.cl.write_text(
+            "# Changelog\n\n"
+            "## 2.35.0\n\n"
+            "### Home Assistant app\n\n"
+            "- Initial ntfy Home Assistant app release.\n\n"
+            "### ntfy upstream changes\n\n"
+            "#### v2.35.0 (2026-10-30)\n\n"
+            "Release page: https://github.com/binwiederhier/ntfy/releases/tag/v2.35.0\n\n"
+            "Fix intermittent request failures.\n"
+        )
 
     def files(self):
         return {n: (self.tmp / "ntfy" / n).read_text() for n in ("config.yaml", "Dockerfile", "CHANGELOG.md")}
@@ -121,12 +136,13 @@ class Update(Base):
         self.assertEqual(before, self.files())
 
     def test_cli_invalid_upstream_response(self):
+        before = self.files()
         bad = self.tmp / "bad.json"
         bad.write_text("not json")
         r = subprocess.run([sys.executable, str(REPO / "scripts/appctl.py"), "update", "--root", str(self.tmp),
                             "--releases-json", str(bad)], capture_output=True, text=True)
         self.assertEqual(r.returncode, 1)
-        self.assertEqual(self.files()["config.yaml"], (REPO / "ntfy/config.yaml").read_text())
+        self.assertEqual(self.files(), before)
 
     def test_packaging_only(self):
         self.assertEqual(appctl.update(self.tmp, packaging_note="Fix watchdog URL."), ("2.35.0", "2.35.0.1"))
