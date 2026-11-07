@@ -136,12 +136,13 @@ class Update(Base):
         self.assertEqual(before, self.files())
 
     def test_cli_invalid_upstream_response(self):
+        before = self.files()
         bad = self.tmp / "bad.json"
         bad.write_text("not json")
         r = subprocess.run([sys.executable, str(REPO / "scripts/appctl.py"), "update", "--root", str(self.tmp),
                             "--releases-json", str(bad)], capture_output=True, text=True)
         self.assertEqual(r.returncode, 1)
-        self.assertEqual(self.files()["config.yaml"], (REPO / "ntfy/config.yaml").read_text())
+        self.assertEqual(self.files(), before)
 
     def test_packaging_only(self):
         self.assertEqual(appctl.update(self.tmp, packaging_note="Fix watchdog URL."), ("2.35.0", "2.35.0.1"))
