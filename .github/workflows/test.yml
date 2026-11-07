@@ -7,5 +7,6 @@ jobs:
       - uses: actions/checkout@v4
       - run: python3 -m unittest discover -s tests -v
       - run: python3 scripts/appctl.py validate
+      - run: bash -n scripts/publish-release.sh
       - run: sh -n ntfy/run.sh
       - run: scripts/smoke.sh amd64
