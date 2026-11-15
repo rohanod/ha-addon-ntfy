@@ -176,6 +176,24 @@ class Validate(Base):
         self.cl.write_text("# Changelog\n\n## 2.35.0\n\n### Home Assistant app\n\n- Updated ntfy to 2.35.0\n")
         self.assertTrue(appctl.validate(self.tmp))
 
+    def test_upstream_mastodon_is_not_a_placeholder(self):
+        # "Mastodon" contains "todo" but is legitimate upstream release content.
+        appctl.update(
+            self.tmp,
+            [rel("2.36.0", body="Fix expired Mastodon subscriptions (HTTP 410).")],
+            IMG,
+        )
+        self.assertEqual(appctl.validate(self.tmp), [])
+
+    def test_real_placeholder_in_changelog_is_rejected(self):
+        self.cl.write_text(
+            self.cl.read_text().replace(
+                "Fix intermittent request failures.",
+                "TODO: write release notes.",
+            )
+        )
+        self.assertIn("2.35.0: placeholder text", appctl.validate(self.tmp))
+
     def test_history_altered(self):
         base = self.cl.read_text()
         self.cl.write_text(base.replace("Fix intermittent", "Fix"))
