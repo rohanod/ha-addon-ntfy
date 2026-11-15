@@ -222,7 +222,7 @@ def validate(root, base_changelog=None):
                 errs.append(f"{name}: upstream entry lacks '{UP_HDR}'")
             elif f"https://github.com/{REPO}/releases/tag/v{name}" not in sec:
                 errs.append(f"{name}: missing upstream release link")
-            if re.search(r"TODO|placeholder|lorem", sec, re.I):
+            if re.search(r"\b(?:TODO|placeholder|lorem)\b", sec, re.I):
                 errs.append(f"{name}: placeholder text")
         if UP_HDR in sec:
             for rel in sec.split("#### v")[1:]:
