@@ -1,6 +1,12 @@
 name: Update ntfy
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/appctl.py"
+      - "tests/test_appctl.py"
+      - ".github/workflows/update-ntfy.yml"
   schedule:
     - cron: "17 5 * * *"
   workflow_dispatch:
