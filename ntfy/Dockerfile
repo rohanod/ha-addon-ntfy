@@ -1,5 +1,5 @@
 # Pinned official upstream image. scripts/appctl.py rewrites this line on upgrade.
-FROM binwiederhier/ntfy:v2.36.0@sha256:fb48c413eb11d50339962b5d62cddce0f800e7f77c626d638a7c20cb7e9c4465
+FROM binwiederhier/ntfy:v2.38.0@sha256:771309aecfce18d8fe2bfb8069994ddd6be6ca6ccdd7badace3d791a0045ff0d
 
 ARG BUILD_VERSION
 ARG BUILD_ARCH
